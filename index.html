@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1a13">
+<title>Atena Hub</title>
+<style>
+  :root {
+    --bg: #0d1a13;
+    --bg2: #12261b;
+    --ink: #efe6d2;
+    --muted: #a9b5a6;
+    --green: #2f6b4b;
+    --green2: #3f8a60;
+    --card: #14291e;
+    --line: rgba(239, 230, 210, .22);
+    --node: #173325;
+    --node-ink: #efe6d2;
+    --btn: #efe6d2;
+    --btn-ink: #0d1a13;
+    --serif: "Cormorant Garamond", "Playfair Display", Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  html[data-theme="light"] {
+    --bg: #f2ecdd;
+    --bg2: #e9e1cd;
+    --ink: #17321f;
+    --muted: #5b6b5c;
+    --green: #2f6b4b;
+    --green2: #1f4f35;
+    --card: #fbf7ec;
+    --line: rgba(23, 50, 31, .25);
+    --node: #fbf7ec;
+    --node-ink: #17321f;
+    --btn: #17321f;
+    --btn-ink: #f2ecdd;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; overflow-x: clip; }
+  body {
+    background: radial-gradient(120% 90% at 50% 20%, var(--bg2), var(--bg) 70%);
+    color: var(--ink);
+    font-family: var(--sans);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 16px calc(14px + env(safe-area-inset-bottom));
+    transition: background .4s, color .4s;
+  }
+
+  /* botão de tema */
+  #tema, #idioma {
+    position: absolute;
+    top: calc(76.9% - 24px);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    z-index: 30;
+    transition: transform .6s cubic-bezier(.22, .9, .25, 1), background .3s;
+  }
+  #tema { left: calc(23.1% - 24px); }
+  #idioma { left: calc(76.9% - 24px); }
+  #tema, #idioma { background: var(--bg); }
+  .palco.escolhido #tema, .palco.escolhido #idioma { pointer-events: auto; }
+  #idioma { font: 700 13px var(--sans); letter-spacing: .04em; }
+  #tema svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+  #tema .sol { display: none; }
+  html[data-theme="light"] #tema .sol { display: block; }
+  html[data-theme="light"] #tema .lua { display: none; }
+
+  html[data-theme="light"] .centro { background: #2f5d3f; }
+  html[data-theme="light"] .centro .letra { color: #efe6d2; }
+
+  /* cabeçalho */
+  header { text-align: center; margin-top: auto; padding-top: 16px; }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(46px, 11vw, 84px);
+    line-height: 1;
+    margin: 10px 0 8px;
+  }
+  .sub {
+    font-size: clamp(14px, 3.6vw, 17px);
+    color: var(--muted);
+    max-width: 30em;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  /* palco do hub */
+  .palco {
+    position: relative;
+    width: min(92vw, 560px, calc(100vh - 390px));
+    width: min(92vw, 560px, calc(100dvh - 390px));
+    min-width: 220px;
+    aspect-ratio: 1;
+    margin: clamp(10px, 3vh, 30px) 0 4px;
+  }
+  .palco svg.rede {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .rede .anel { fill: none; stroke: var(--line); stroke-width: .25; stroke-dasharray: 1 1.4; }
+  .rede .fio {
+    stroke: var(--line);
+    stroke-width: .35;
+    stroke-dasharray: 1.6 1.6;
+    animation: fluxo 3s linear infinite;
+  }
+  .seloSvg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--es, 1));
+  }
+  .palco.mov .seloSvg { transition: transform .6s cubic-bezier(.22, .9, .25, 1); }
+  .seloSvg .selo { transform-box: view-box; transform-origin: 50px 50px; animation: giraSelo 60s linear infinite; }
+  .seloSvg .selo text { font: 600 3.4px var(--sans); fill: var(--muted); text-transform: uppercase; }
+  @keyframes giraSelo { to { transform: rotate(360deg); } }
+  .rede .ponto { fill: var(--ink); opacity: .85; }
+  @keyframes fluxo { to { stroke-dashoffset: -6.4; } }
+
+  .centro {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 31%;
+    aspect-ratio: 1;
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(var(--es, 1));
+    border-radius: 50%;
+    background: #efe6d2;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    box-shadow: 0 0 0 6px var(--bg), 0 0 0 7px var(--line);
+    animation: respira 5s ease-in-out infinite;
+  }
+  .centro .letra {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(54px, 13vw, 92px);
+    line-height: 1;
+    color: #2f5d3f;
+    transform: translateY(-4%);
+  }
+  .centro img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  @keyframes respira {
+    50% { scale: 1.03; }
+  }
+
+  .no {
+    position: absolute;
+    width: 25%;
+    aspect-ratio: 1;
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px)));
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--node);
+    color: var(--node-ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    padding: 0;
+    font-family: var(--sans);
+    transition: transform .25s, border-color .25s, background .25s, opacity .4s;
+  }
+  .no:hover, .no:focus-visible {
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(1.08);
+    border-color: var(--green2);
+    outline: none;
+  }
+  .no:active { transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(.96); }
+  .no svg { width: 34%; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .no span { font-size: clamp(11px, 2.9vw, 14px); letter-spacing: .04em; }
+
+  /* sem seleção de texto / caret / contorno ao tocar nos círculos e botões */
+  .palco, .no, .centro, .btn, #tema, .fechar, header, .dica, footer {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  button, a { touch-action: manipulation; }
+  .no, .no *, .btn, .btn *, #tema, #tema *, .fechar { cursor: pointer; }
+  .no *, .btn svg { pointer-events: none; }
+  .palco, header, .dica, footer, .rodape-txt { cursor: default; }
+  .centro { cursor: pointer; }
+  .no, .btn, #tema, .fechar { cursor: pointer; }
+  button:focus, a:focus { outline: none; }
+  .no:focus-visible, .btn:focus-visible, #tema:focus-visible, .fechar:focus-visible {
+    outline: 2px solid var(--green2);
+    outline-offset: 3px;
+  }
+  .no:focus:not(:focus-visible) { border-color: var(--line); }
+
+  /* mira: aparece em volta de cada bolinha ao passar o mouse / tocar */
+  .no::before, .no::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s, transform .35s cubic-bezier(.2, .8, .2, 1);
+  }
+  .no::before {
+    inset: -11px;
+    border-radius: 50%;
+    border: 1.5px dashed var(--ink);
+    transform: scale(.8) rotate(0deg);
+  }
+  .no::after {
+    inset: -20px;
+    --m: var(--ink);
+    background:
+      linear-gradient(var(--m), var(--m)) 50% 0 / 2px 11px no-repeat,
+      linear-gradient(var(--m), var(--m)) 50% 100% / 2px 11px no-repeat,
+      linear-gradient(var(--m), var(--m)) 0 50% / 11px 2px no-repeat,
+      linear-gradient(var(--m), var(--m)) 100% 50% / 11px 2px no-repeat;
+    transform: scale(1.25);
+  }
+  .no:hover::before, .no:focus-visible::before, .no:active::before, .no.sel::before, .palco.miras .no::before {
+    opacity: .85;
+    transform: scale(1) rotate(90deg);
+    animation: gira 6s linear .35s infinite;
+  }
+  .no:hover::after, .no:focus-visible::after, .no:active::after, .no.sel::after, .palco.miras .no::after {
+    opacity: 1;
+    transform: scale(1);
+  }
+  @keyframes gira { to { transform: scale(1) rotate(450deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .no:hover::before, .no:focus-visible::before, .no:active::before, .no.sel::before, .palco.miras .no::before { animation: none; }
+  }
+
+  /* escolha de um serviço: o "a" vai para a esquerda, a bola escolhida para a direita, as outras somem */
+  .palco svg.rede { transition: opacity .4s; }
+  .palco.mov .no, .palco.mov .centro {
+    transition: transform .6s cubic-bezier(.22, .9, .25, 1), opacity .35s, border-color .25s;
+  }
+  .palco.escolhido { z-index: 12; pointer-events: none; }
+  .palco.escolhido .no.sel { pointer-events: auto; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(var(--es, 1)); }
+  .palco.escolhido .no:not(.sel) { opacity: 0; pointer-events: none; transform: translate(-50%, -50%) scale(.6); }
+  .palco.escolhido svg.rede { opacity: 0; }
+  .palco.escolhido .centro { animation: none; }
+  .elo {
+    position: fixed;
+    height: 0;
+    border-top: 2px dashed var(--ink);
+    opacity: 0;
+    transform: translateY(-1px);
+    pointer-events: none;
+    z-index: 12;
+    transition: opacity .12s;
+  }
+  html.aberto .elo { opacity: .55; transition: opacity .4s .3s; }
+  header .sub, .dica { transition: opacity .35s; }
+  html.aberto .dica { opacity: 0; }
+  header { transition: opacity .35s; }
+  html.aberto header { opacity: 0; }
+  html.aberto { overflow: hidden; }
+
+  .dica { font-size: 13px; color: var(--muted); margin: 30px 0 0; text-align: center; }
+
+  /* rodapé */
+  footer { margin-top: auto; padding-top: 22px; text-align: center; width: 100%; }
+  .contatos { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    border: 1px solid var(--btn);
+    background: var(--btn);
+    color: var(--btn-ink);
+    font: 600 14px var(--sans);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .btn.vazio { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .rodape-txt { transition: opacity .3s; }
+  html.aberto .rodape-txt { opacity: 0; }
+  .rodape-txt { font-size: 12px; color: var(--muted); margin: 14px 0 0; letter-spacing: .06em; }
+
+  /* cartão do serviço */
+  #fundo {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 12, 8, .45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+    z-index: 10;
+  }
+  #cartao {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    width: min(100%, 520px);
+    transform: translate(-50%, 105%);
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 26px 26px 0 0;
+    padding: 26px 24px calc(26px + env(safe-area-inset-bottom));
+    transition: transform .4s cubic-bezier(.2, .8, .2, 1);
+    z-index: 11;
+    max-height: 88dvh;
+    overflow: auto;
+  }
+  html.aberto #fundo { opacity: 1; pointer-events: auto; }
+  html.aberto #cartao { transform: translate(-50%, 0); }
+  #cartao .fechar {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font-size: 18px;
+    cursor: pointer;
+  }
+  #cartao .ic { width: 40px; height: 40px; color: var(--green2); }
+  #cartao .ic svg { width: 100%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  #cartao h2 {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 1.1;
+    margin: 10px 0 8px;
+  }
+  #cartao p { color: var(--muted); line-height: 1.55; margin: 0 0 12px; font-size: 15px; }
+  #cartao ul { margin: 0 0 20px; padding: 0; list-style: none; }
+  #cartao li { padding: 7px 0 7px 22px; position: relative; font-size: 15px; border-top: 1px solid var(--line); }
+  #cartao li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 15px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green2);
+  }
+  #cartao .btn { width: 100%; justify-content: center; }
+
+  @media (min-width: 700px) {
+    #cartao {
+      bottom: 20px;
+      border-radius: 26px;
+      transform: translate(-50%, 130%);
+    }
+    html.aberto #cartao { transform: translate(-50%, 0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fio, .centro, .seloSvg .selo { animation: none; }
+    * { transition-duration: .01s !important; }
+  }
+  html.pausa .fio, html.pausa .centro, html.pausa .seloSvg .selo { animation-play-state: paused; }
+</style>
+</head>
+<body>
+
+<script>
+/* ============================================================
+   CONFIGURAÇÃO  (é só mexer aqui)
+   ============================================================ */
+var CONFIG = {
+  nome: 'Atena Hub',
+  etiqueta: 'Marketing estratégico',
+  frase: 'Criatividade, estratégia e inovação para superar as expectativas e criar novas.',
+  rodape: 'Desde 2020 transformando empresas  ·  PR | SC | RO | USA',
+  instagram: 'https://www.instagram.com/atenahub_/',
+  whatsapp: '5546988204589',
+  mensagemPadrao: 'Olá! Vim pelo site da Atena Hub.',
+  /* logo opcional: coloque logo.jpg / logo.png / logo.webp na mesma pasta */
+  logo: 'logo',
+  extensoes: ['jpg', 'jpeg', 'png', 'webp'],
+  /* textos em inglês (Estados Unidos) */
+  en: {
+    etiqueta: 'Strategic marketing',
+    frase: 'Creativity, strategy and innovation to exceed expectations and create new ones.',
+    rodape: 'Since 2020 transforming businesses  ·  PR | SC | RO | USA',
+    servicos: [
+      { nome: 'Instagram', titulo: 'Content that sells', texto: 'You hire us and your company receives strategy, a schedule and all the material ready to post.', itens: ['Scripts and schedule', 'Design, stories and editing', 'Filming and captions', 'Focus on new customers'] },
+      { nome: 'Strategy', titulo: 'Strategic marketing', texto: 'Nothing is more strategic than communicating with honesty. Before posting, we define the path.', itens: ['Brand positioning', 'Well-defined audience', 'Attractive offer', 'Honest communication'] },
+      { nome: 'Websites', titulo: 'Websites and pages', texto: 'Websites, sales pages and digital cards that present your brand and take customers straight to WhatsApp.', itens: ['Business website', 'Sales page', 'Digital card with QR Code', 'Works great on mobile'] },
+      { nome: 'Ads', titulo: 'Authority, sales and predictability', texto: 'Investing money in ads is not enough. You need strategy, a defined audience, an attractive offer and results tracking.', itens: ['Campaigns with a clear goal', 'Defined audience and offer', 'Tracking the numbers', 'Results report'] }
+    ]
+  },
+  ui: {
+    pt: { dica: 'Toque em um círculo para ver o serviço', zap: 'Chamar no WhatsApp', insta: 'Instagram', cta: 'Pedir orçamento no WhatsApp', fechar: 'Fechar', tema: 'Trocar tema', idioma: 'Idioma', miras: 'Mostrar a mira em todos os serviços', msg: 'Olá! Vim pelo site da Atena Hub.', msgS: 'Olá! Tenho interesse em {n} ({t}).', codigo: 'PT', html: 'pt-BR' },
+    en: { dica: 'Tap a circle to see the service', zap: 'Chat on WhatsApp', insta: 'Instagram', cta: 'Request a quote on WhatsApp', fechar: 'Close', tema: 'Switch theme', idioma: 'Language', miras: 'Show the target on all services', msg: 'Hi! I came from the Atena Hub website.', msgS: 'Hi! I am interested in {n} ({t}).', codigo: 'EN', html: 'en-US' }
+  },
+  servicos: [
+    {
+      id: 'instagram',
+      nome: 'Instagram',
+      titulo: 'Conteúdo que vende',
+      texto: 'Você contrata e a sua empresa recebe estratégia, cronograma e todo o material pronto para postar.',
+      itens: ['Roteiros e cronograma', 'Design, stories e edição', 'Captação e legenda', 'Foco em novos clientes']
+    },
+    {
+      id: 'estrategia',
+      nome: 'Estratégia',
+      titulo: 'Marketing estratégico',
+      texto: 'Nada é mais estratégico do que comunicar com verdade. Antes de postar, a gente define o caminho.',
+      itens: ['Posicionamento da marca', 'Público bem definido', 'Oferta atrativa', 'Comunicação com verdade']
+    },
+    {
+      id: 'sites',
+      nome: 'Sites',
+      titulo: 'Sites e páginas',
+      texto: 'Sites, páginas de venda e cartões digitais que apresentam a sua marca e levam o cliente direto ao WhatsApp.',
+      itens: ['Site institucional', 'Página de vendas', 'Cartão digital com QR Code', 'Funciona bem no celular']
+    },
+    {
+      id: 'anuncios',
+      nome: 'Anúncios',
+      titulo: 'Autoridade, vendas e previsibilidade',
+      texto: 'Não basta investir dinheiro em anúncios. É preciso estratégia, público definido, oferta atrativa e acompanhamento dos resultados.',
+      itens: ['Campanhas com objetivo claro', 'Público e oferta definidos', 'Acompanhamento dos números', 'Relatório dos resultados']
+    }
+  ]
+};
+</script>
+
+
+<header>
+  <h1 id="nome"></h1>
+  <p class="sub" id="frase"></p>
+</header>
+
+<div class="elo" id="elo"></div>
+<main class="palco" id="palco" aria-label="Serviços">
+  <svg class="rede" viewBox="0 0 100 100" aria-hidden="true">
+    <circle class="anel" cx="50" cy="50" r="38"/>
+    <g id="fios"></g>
+    <g id="pontos"></g>
+  </svg>
+  <svg class="seloSvg" id="seloSvg" viewBox="0 0 100 100" aria-hidden="true">
+    <g class="selo">
+      <path id="arcoSelo" d="M50,31 a19,19 0 1,1 -0.01,0" fill="none"/>
+      <text><textPath href="#arcoSelo" id="etiqueta" startOffset="0" textLength="118" lengthAdjust="spacing"></textPath></text>
+    </g>
+  </svg>
+  <button id="tema" type="button" aria-label="Trocar tema">
+    <svg class="lua" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    <svg class="sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  </button>
+  <button id="idioma" type="button" aria-label="Idioma"><span id="idc">PT</span></button>
+  <div class="centro" id="centro" role="button" tabindex="0" aria-pressed="false" aria-label="Mostrar a mira em todos os serviços"><div class="letra">a</div></div>
+</main>
+<p class="dica" id="dica">Toque em um círculo para ver o serviço</p>
+
+<footer>
+  <div class="contatos">
+    <a class="btn" id="zap" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.3" fill="none" stroke="currentColor" stroke-width="1.7"/><path transform="translate(12 12) scale(.56) translate(-12 -12)" fill="currentColor" stroke="none" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+      <span id="tzap">Chamar no WhatsApp</span>
+    </a>
+    <a class="btn vazio" id="insta" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg>
+      <span id="tinsta">Instagram</span>
+    </a>
+  </div>
+  <p class="rodape-txt" id="rodape"></p>
+</footer>
+
+<div id="fundo"></div>
+<section id="cartao" role="dialog" aria-modal="true" aria-labelledby="ct">
+  <button class="fechar" type="button" id="fechar" aria-label="Fechar">&times;</button>
+  <div class="ic" id="ci"></div>
+  <h2 id="ct"></h2>
+  <p id="cx"></p>
+  <ul id="cl"></ul>
+  <a class="btn" id="cz" target="_blank" rel="noopener">Pedir orçamento no WhatsApp</a>
+</section>
+
+<script>
+(function () {
+  var H = document.documentElement;
+  var $ = function (id) { return document.getElementById(id); };
+  var NS = 'http://www.w3.org/2000/svg';
+
+  /* ícones de cada serviço */
+  var ICONES = {
+    instagram: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg>',
+    estrategia: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>',
+    sites: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M7 6.5h.01M10 6.5h.01"/></svg>',
+    anuncios: '<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>'
+  };
+  var ICON_GENERICO = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>';
+
+  /* textos básicos e links */
+  document.title = CONFIG.nome;
+  $('nome').textContent = CONFIG.nome;
+  $('insta').href = CONFIG.instagram;
+  function zapLink(msg) {
+    return 'https://wa.me/' + CONFIG.whatsapp + '?text=' + encodeURIComponent(msg);
+  }
+  var lang = 'pt', selIdx = -1;
+  function U() { return CONFIG.ui[lang]; }
+  function svc(i) {
+    var b = CONFIG.servicos[i];
+    if (lang === 'pt') return b;
+    var e = CONFIG.en.servicos[i] || {};
+    return { id: b.id, nome: e.nome || b.nome, titulo: e.titulo || b.titulo, texto: e.texto || b.texto, itens: e.itens || b.itens };
+  }
+  function textos() {
+    var u = U(), en = lang === 'en';
+    $('etiqueta').textContent = ((en ? CONFIG.en.etiqueta : CONFIG.etiqueta).toUpperCase() + ' · ').repeat(2);
+    $('frase').textContent = en ? CONFIG.en.frase : CONFIG.frase;
+    $('rodape').textContent = en ? CONFIG.en.rodape : CONFIG.rodape;
+    $('dica').textContent = u.dica;
+    $('tzap').textContent = u.zap;
+    $('tinsta').textContent = u.insta;
+    $('cz').textContent = u.cta;
+    $('zap').href = zapLink(u.msg);
+    $('fechar').setAttribute('aria-label', u.fechar);
+    $('tema').setAttribute('aria-label', u.tema);
+    $('idioma').setAttribute('aria-label', u.idioma);
+    $('centro').setAttribute('aria-label', u.miras);
+    $('idc').textContent = u.codigo;
+    H.setAttribute('lang', u.html);
+    var bs = document.querySelectorAll('.no');
+    for (var i = 0; i < bs.length; i++) {
+      var d = svc(i);
+      bs[i].querySelector('span').textContent = d.nome;
+      bs[i].setAttribute('aria-label', d.titulo);
+    }
+    if (selIdx >= 0) preencheCartao(selIdx);
+  }
+
+  /* logo opcional no círculo do centro */
+  (function () {
+    var k = 0;
+    (function tenta() {
+      if (k >= CONFIG.extensoes.length) return;
+      var u = CONFIG.logo + '.' + CONFIG.extensoes[k++], im = new Image();
+      im.onload = function () {
+        var f = document.createElement('img');
+        f.src = u;
+        f.alt = CONFIG.nome;
+        $('centro').appendChild(f);
+      };
+      im.onerror = tenta;
+      im.src = u;
+    })();
+  })();
+
+  /* monta os círculos em volta do centro */
+  var servicos = CONFIG.servicos, n = servicos.length;
+  var R = 38;
+  servicos.forEach(function (s, i) {
+    var ang = (-90 + i * (360 / n)) * Math.PI / 180;
+    var x = 50 + R * Math.cos(ang), y = 50 + R * Math.sin(ang);
+
+    var fio = document.createElementNS(NS, 'line');
+    fio.setAttribute('class', 'fio');
+    fio.setAttribute('x1', 50); fio.setAttribute('y1', 50);
+    fio.setAttribute('x2', x.toFixed(2)); fio.setAttribute('y2', y.toFixed(2));
+    $('fios').appendChild(fio);
+
+    var p = document.createElementNS(NS, 'circle');
+    p.setAttribute('class', 'ponto');
+    p.setAttribute('r', '.7');
+    var m = document.createElementNS(NS, 'animateMotion');
+    m.setAttribute('dur', (4 + i * .7) + 's');
+    m.setAttribute('repeatCount', 'indefinite');
+    m.setAttribute('path', 'M50,50 L' + x.toFixed(2) + ',' + y.toFixed(2));
+    p.appendChild(m);
+    $('pontos').appendChild(p);
+
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'no';
+    b.style.left = x.toFixed(2) + '%';
+    b.style.top = y.toFixed(2) + '%';
+    b.innerHTML = (ICONES[s.id] || ICON_GENERICO) + '<span></span>';
+    b.querySelector('span').textContent = s.nome;
+    b.setAttribute('aria-label', s.titulo);
+    b.addEventListener('click', function () { if (selBtn === b) fechar(); else abrir(i, b); });
+    $('palco').appendChild(b);
+  });
+
+  /* cartão + animação da escolha */
+  var selBtn = null;
+  function posiciona() {
+    if (!selBtn) return;
+    var ce = $('centro'), b = selBtn, desk = innerWidth >= 700;
+    ['--dx', '--dy', '--es'].forEach(function (v) { ce.style.removeProperty(v); b.style.removeProperty(v); $('seloSvg').style.removeProperty(v); });
+    var ra = ce.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    var tam = rb.width, cardTop = innerHeight - $('cartao').offsetHeight - (desk ? 20 : 0);
+    /* centraliza o par no espaço do topo da tela até o cartão, com tamanho proporcional a esse espaço */
+    var livre = cardTop, cx = innerWidth / 2, ty = livre / 2;
+    var gap = Math.min(innerWidth * .28, 190);
+    var es = Math.min(1.35, (livre * .62) / ra.width);
+    es = Math.min(es, 2 * (cx - gap - 10) / ra.width);
+    es = Math.min(es, (gap * 2 - 24) / (ra.width + tam));
+    es = Math.max(.45, es);
+    var so = $('seloSvg');
+    ce.style.setProperty('--es', es); b.style.setProperty('--es', es);
+    so.style.setProperty('--es', es);
+    ce.style.setProperty('--dx', (cx - gap - (ra.left + ra.width / 2)) + 'px');
+    ce.style.setProperty('--dy', (ty - (ra.top + ra.height / 2)) + 'px');
+    so.style.setProperty('--dx', ce.style.getPropertyValue('--dx')); so.style.setProperty('--dy', ce.style.getPropertyValue('--dy'));
+    b.style.setProperty('--dx', (cx + gap - (rb.left + rb.width / 2)) + 'px');
+    b.style.setProperty('--dy', (ty - (rb.top + rb.height / 2)) + 'px');
+    /* botão de tema vai para o meio, logo acima do "a" e da bola */
+    var ay = Math.max(30, ty - ra.height * es / 2 - 38);
+    [['tema', -30], ['idioma', 30]].forEach(function (q) {
+      var o = $(q[0]);
+      o.style.transition = 'none'; o.style.transform = ''; 
+      var r = o.getBoundingClientRect(); void o.offsetWidth; o.style.transition = '';
+      o.style.transform = 'translate(' + (cx + q[1] - (r.left + 24)) + 'px,' + (ay - (r.top + 24)) + 'px)';
+    });
+    var elo = $('elo');
+    elo.style.left = (cx - gap) + 'px'; elo.style.width = (2 * gap) + 'px'; elo.style.top = ty + 'px';
+  }
+  function preencheCartao(i) {
+    var s = svc(i);
+    $('ci').innerHTML = ICONES[s.id] || ICON_GENERICO;
+    $('ct').textContent = s.titulo;
+    $('cx').textContent = s.texto;
+    $('cl').innerHTML = '';
+    s.itens.forEach(function (t) {
+      var li = document.createElement('li');
+      li.textContent = t;
+      $('cl').appendChild(li);
+    });
+    $('cz').href = zapLink(U().msgS.replace('{n}', s.nome).replace('{t}', s.titulo));
+  }
+  function abrir(i, b) {
+    selIdx = i;
+    preencheCartao(i);
+    fechaMenu();
+    H.classList.add('aberto');
+    selBtn = b;
+    /* mede antes de ligar as classes, para a transição partir da posição de agora */
+    var pal = $('palco');
+    pal.classList.add('mov');
+    posiciona();
+    pal.classList.add('escolhido');
+    b.classList.add('sel');
+  }
+  function fechar() {
+    H.classList.remove('aberto');
+    if (!selBtn) return;
+    var pal = $('palco'), ce = $('centro'), b = selBtn;
+    selBtn = null;
+    $('tema').style.transform = ''; $('idioma').style.transform = ''; selIdx = -1; fechaMenu();
+    ['--dx', '--dy', '--es'].forEach(function (v) { ce.style.removeProperty(v); b.style.removeProperty(v); $('seloSvg').style.removeProperty(v); });
+    b.classList.remove('sel');
+    pal.classList.remove('escolhido');
+    setTimeout(function () { if (!selBtn) pal.classList.remove('mov'); }, 1000);
+  }
+  window.addEventListener('resize', posiciona);
+
+  /* clique no "a" do meio: liga/desliga a mira em todas as bolinhas */
+  var miras = false;
+  function alternaMiras() {
+    if (selBtn) return;
+    miras = !miras;
+    $('palco').classList.toggle('miras', miras);
+    $('centro').setAttribute('aria-pressed', miras ? 'true' : 'false');
+  }
+  $('centro').addEventListener('click', alternaMiras);
+  $('centro').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alternaMiras(); }
+  });
+  $('fechar').addEventListener('click', fechar);
+  $('fundo').addEventListener('click', fechar);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fechar(); });
+
+  /* fonte do texto em volta do "a": 3px menor que a original (3.4 unidades do desenho) */
+  function fonteSelo() {
+    var k = $('palco').getBoundingClientRect().width / 100;
+    if (k > 0) $('etiqueta').parentNode.style.fontSize = Math.max(1.5, 3.4 - 3 / k) + 'px';
+  }
+  fonteSelo();
+  window.addEventListener('resize', fonteSelo);
+  window.addEventListener('load', fonteSelo);
+
+  /* botão de tema ao lado do "b" de Atena Hub, centralizado na linha do título */
+  function alinhaTema() {}
+  alinhaTema();
+  window.addEventListener('resize', alinhaTema);
+  window.addEventListener('load', alinhaTema);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(alinhaTema);
+
+  /* idioma */
+  function fechaMenu() {}
+  function aplicaIdioma(l, salvar) {
+    lang = l === 'en' ? 'en' : 'pt';
+    textos();
+    alinhaTema();
+    if (salvar) { try { localStorage.setItem('atena-lang', lang); } catch (e) {} }
+  }
+  /* só há 2 idiomas: o botão troca direto entre eles */
+  $('idioma').addEventListener('click', function () { aplicaIdioma(lang === 'pt' ? 'en' : 'pt', true); });
+  var salvoL = 'pt';
+  try { salvoL = localStorage.getItem('atena-lang') || 'pt'; } catch (e) {}
+  aplicaIdioma(salvoL, false);
+
+  /* tema claro / escuro */
+  function aplicaTema(t) {
+    H.setAttribute('data-theme', t);
+    var m = document.querySelector('meta[name=theme-color]');
+    if (m) m.setAttribute('content', t === 'light' ? '#f2ecdd' : '#0d1a13');
+  }
+  try {
+    var salvo = localStorage.getItem('atena-tema');
+    if (salvo === 'light' || salvo === 'dark') aplicaTema(salvo);
+  } catch (e) {}
+  $('tema').addEventListener('click', function () {
+    var t = H.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    aplicaTema(t);
+    try { localStorage.setItem('atena-tema', t); } catch (e) {}
+  });
+
+  /* economia: pausa as animações quando a aba fica escondida */
+  var svg = document.querySelector('svg.rede');
+  document.addEventListener('visibilitychange', function () {
+    var oculta = document.hidden;
+    H.classList.toggle('pausa', oculta);
+    try { oculta ? svg.pauseAnimations() : svg.unpauseAnimations(); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
